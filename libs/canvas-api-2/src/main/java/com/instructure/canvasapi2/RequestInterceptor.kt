@@ -51,8 +51,14 @@ class RequestInterceptor : Interceptor {
         }
 
         // Authenticate if possible
-        if (!params.shouldIgnoreToken && token != "") {
-            builder.addHeader("Authorization", "Bearer $token")
+        if (!params.shouldIgnoreToken) {
+            if (token != "" && token != "cookie_authenticated") {
+                builder.addHeader("Authorization", "Bearer $token")
+            }
+            val cookies = ApiPrefs.canvasCookies
+            if (cookies.isNotEmpty()) {
+                builder.addHeader("Cookie", cookies)
+            }
         }
 
         // Add Accept-Language header for a11y

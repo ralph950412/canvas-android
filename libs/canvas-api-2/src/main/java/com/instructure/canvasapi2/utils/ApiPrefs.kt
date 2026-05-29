@@ -48,6 +48,8 @@ object ApiPrefs : PrefManager(PREFERENCE_FILE_NAME) {
 
     var refreshToken by StringPref()
 
+    var canvasCookies by StringPref("", "canvas_cookies")
+
     fun getValidToken(): String = if (accessToken.isNotEmpty()) accessToken else token
 
     var protocol by StringPref("https", "api_protocol")

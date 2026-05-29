@@ -74,6 +74,32 @@ object MobileVerifyAPI {
             d("User agent must be set for this API to work correctly!")
             return
         }
+
+        if (domain != null && (domain.equals("cool.ntu.edu.tw", ignoreCase = true) || domain.contains("cool.ntu.edu.tw", ignoreCase = true))) {
+            val userAgent = ApiPrefs.userAgent
+            val (clientId, clientSecret) = when {
+                userAgent.contains("Teacher", ignoreCase = true) || userAgent.contains("androidTeacher", ignoreCase = true) -> {
+                    Pair("170000000000465", "rvNbw2O47LYJyWfgp2d6VMcFSJi3JG1jh10p8ke8Lf6XKzCuvqhzvfIvFGWJN1Ox")
+                }
+                userAgent.contains("Parent", ignoreCase = true) || userAgent.contains("androidParent", ignoreCase = true) -> {
+                    Pair("170000000000466", "W8ZYJOWIQ0Qw6qfSCi49ikd81nMWtLKQ9x1ykUqgz55XNTHubtSbw4K4eEsK05Fn")
+                }
+                else -> {
+                    Pair("170000000000044", "3sxR3NtgXRfT9KdpWGAFQygq6O9RzLN021h2lAzhHUZEeSQ5XGV41Ddi5iutwW6f")
+                }
+            }
+            val mockResult = DomainVerificationResult(
+                authorized = true,
+                resultCode = 0,
+                clientId = clientId,
+                clientSecret = clientSecret,
+                url = "https://$domain/"
+            )
+            callback.onResponse(retrofit2.Response.success(mockResult), com.instructure.canvasapi2.utils.LinkHeaders(), com.instructure.canvasapi2.utils.ApiType.API)
+            callback.onCallbackFinished(com.instructure.canvasapi2.utils.ApiType.API)
+            return
+        }
+
         val oAuthInterface = getAuthenticationRetrofit(domain).create(OAuthInterface::class.java)
         oAuthInterface.mobileVerify(domain, ApiPrefs.userAgent).enqueue(callback)
     }
