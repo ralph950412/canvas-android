@@ -301,15 +301,6 @@ abstract class BaseLoginSignInActivity : BaseCanvasActivity(), OnAuthenticationS
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
-            
-            // Check for NTU Cool session cookie
-            if (url != null && url.contains("cool.ntu.edu.tw")) {
-                val cookieManager = CookieManager.getInstance()
-                val cookies = cookieManager.getCookie(url)
-                if (cookies != null && cookies.contains("_canvas_session")) {
-                    tryCookieAuthentication(accountDomain, cookies)
-                }
-            }
 
             // The intention of this delay is that we don't want to show/hide the progress bar multiple times
             // when loading multiple pages after each other.
@@ -320,76 +311,8 @@ abstract class BaseLoginSignInActivity : BaseCanvasActivity(), OnAuthenticationS
         }
     }
 
-    private var isCookieLoginInProgress = false
-
-    private fun tryCookieAuthentication(accountDomain: AccountDomain, cookies: String) {
-        if (isCookieLoginInProgress) return
-        isCookieLoginInProgress = true
-
-        val previousCookies = ApiPrefs.canvasCookies
-        val previousDomain = ApiPrefs.domain
-        val previousProtocol = ApiPrefs.protocol
-        val previousToken = ApiPrefs.accessToken
-
-        ApiPrefs.domain = accountDomain.domain!!
-        ApiPrefs.protocol = "https"
-        ApiPrefs.canvasCookies = cookies
-        ApiPrefs.accessToken = "cookie_authenticated"
-
-        getSelf(true, object : StatusCallback<User>() {
-            override fun onResponse(response: Response<User>, linkHeaders: LinkHeaders, type: ApiType) {
-                if (type.isAPI) {
-                    val userResponse = response.body()
-                    if (userResponse != null) {
-                        user = userResponse
-                        val signedInUser = SignedInUser(
-                            userResponse,
-                            domain,
-                            protocol,
-                            "",
-                            "cookie_authenticated",
-                            "cookie_authenticated",
-                            "170000000000044",
-                            "",
-                            null,
-                            null
-                        )
-                        add(this@BaseLoginSignInActivity, signedInUser)
-                        refreshWidgets()
-
-                        if (intent.hasExtra(TokenRefresher.TOKEN_REFRESH)) {
-                            finish()
-                            return
-                        }
-                        LoginPrefs.lastSavedLogin = SavedLoginInfo(accountDomain, canvasLogin)
-                        navigation.startLogin(viewModel, false)
-                        tokenRefresher.loggedOut = false
-                    } else {
-                        ApiPrefs.canvasCookies = previousCookies
-                        ApiPrefs.domain = previousDomain
-                        ApiPrefs.protocol = previousProtocol
-                        ApiPrefs.accessToken = previousToken
-                        isCookieLoginInProgress = false
-                    }
-                }
-            }
-
-            override fun onFail(call: Call<User>?, error: Throwable, response: Response<*>?) {
-                ApiPrefs.canvasCookies = previousCookies
-                ApiPrefs.domain = previousDomain
-                ApiPrefs.protocol = previousProtocol
-                ApiPrefs.accessToken = previousToken
-                isCookieLoginInProgress = false
-            }
-        })
-    }
-
     private fun beginSignIn(accountDomain: AccountDomain) {
         val url = accountDomain.domain
-        if (url != null && (url.equals("cool.ntu.edu.tw", ignoreCase = true) || url.contains("cool.ntu.edu.tw", ignoreCase = true))) {
-            loadUrl(webView, "https://cool.ntu.edu.tw/login", headers)
-            return
-        }
         if (canvasLogin == MOBILE_VERIFY_FLOW) { //Skip Mobile Verify
             val view = LayoutInflater.from(this@BaseLoginSignInActivity).inflate(R.layout.dialog_skip_mobile_verify, null)
             val protocolEditText = view.findViewById<EditText>(R.id.mobileVerifyProtocol)
