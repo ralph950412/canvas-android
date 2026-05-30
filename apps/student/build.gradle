@@ -36,8 +36,8 @@ android {
 
     defaultConfig {
         applicationId "com.instructure.candroid"
-        minSdkVersion Versions.MIN_SDK
-        targetSdkVersion Versions.TARGET_SDK
+        minSdk Versions.MIN_SDK
+        targetSdk Versions.TARGET_SDK
         versionCode = 291
         versionName = '8.7.1'
 
@@ -77,8 +77,8 @@ android {
         }
     }
 
-    lintOptions {
-        abortOnError false
+    lint {
+        abortOnError = false
     }
 
     signingConfigs {
@@ -93,7 +93,8 @@ android {
     buildTypes {
 
         debug {
-            testCoverageEnabled = coverageEnabled
+            enableAndroidTestCoverage = coverageEnabled
+            enableUnitTestCoverage = coverageEnabled
             debuggable true
             minifyEnabled false
             shrinkResources false
@@ -187,15 +188,12 @@ android {
     excluding these dependencies from your test configuration will result in an dex pre-verifier error
     at runtime. More info in this tools bug: (https://code.google.com/p/android/issues/detail?id=192497)
     */
-    configurations.implementation.dependencies.each { compileDependency ->
-        println "Excluding compile dependency: ${compileDependency.getName()}"
-        configurations.androidTestImplementation.dependencies.each { androidTestCompileDependency ->
-            configurations.androidTestImplementation.exclude module: "${compileDependency.getName()}"
+    configurations.implementation.dependencies.configureEach { compileDependency ->
+        configurations.androidTestImplementation.dependencies.configureEach { androidTestCompileDependency ->
+            if (compileDependency.name == androidTestCompileDependency.name) {
+                configurations.androidTestImplementation.exclude module: "${compileDependency.name}"
+            }
         }
-    }
-
-    dexOptions {
-        javaMaxHeapSize '4g'
     }
 
 
@@ -372,9 +370,9 @@ if (coverageEnabled) {
 
         reports {
             // default path: /canvas-android/apps/teacher/build/reports/jacoco/firebaseJacoco/html/
-            html.enabled true
-            csv.enabled  false
-            xml.enabled  false
+            html.required = true
+            csv.required = false
+            xml.required = false
         }
     }
 }
